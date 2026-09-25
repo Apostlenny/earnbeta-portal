@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Earnbeta - Cross-Browser & Telegram Mini App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Earnbeta - Universal Web Reward Dashboard</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,11 +18,11 @@
     <!-- YouTube IFrame API -->
     <script src="https://www.youtube.com/iframe_api"></script>
 
-    <!-- Monetag SDK (Telegram + Browser Fallback compatible) -->
+    <!-- Universal Web Monetag SDK (Cross-Browser Compatible) -->
     <script src='//libtl.com/sdk.js' data-zone='11870767' data-sdk='show_11870767'></script>
 
     <style>
-        body { background-color: #0b0f19; font-family: system-ui, -apple-system, sans-serif; color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #0b0f19; font-family: system-ui, -apple-system, sans-serif; color: #f3f4f6; }
         .glow-card { background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%); border: 1px solid rgba(255, 255, 255, 0.08); }
         .glow-button { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
         .tab-content { display: none; }
@@ -43,7 +43,7 @@
             </div>
             <div class="space-y-2">
                 <h2 id="introTitle" class="text-2xl font-black text-white tracking-wide">Welcome to Earnbeta</h2>
-                <p id="introDesc" class="text-xs text-gray-300 max-w-xs mx-auto leading-relaxed">Watch videos, complete PTC ads, Instagram promos, and cash out!</p>
+                <p id="introDesc" class="text-xs text-gray-300 max-w-xs mx-auto leading-relaxed">Watch videos, complete PTC ads, social promos, and cash out securely!</p>
             </div>
             <div class="flex justify-center space-x-1.5 pt-2">
                 <span class="w-2 h-2 rounded-full bg-amber-400" id="dot-0"></span>
@@ -60,8 +60,8 @@
     <div id="authModal" class="fixed inset-0 z-[100] bg-[#0b0f19]/95 backdrop-blur-md flex items-center justify-center p-4 hidden">
         <div class="glow-card w-full max-w-md p-6 rounded-2xl shadow-2xl border border-gray-800 space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="text-center space-y-1">
-                <h2 class="text-2xl font-black text-amber-400 tracking-wider">Earnbeta Portal</h2>
-                <p class="text-xs text-gray-400">Sign in or register to access your task dashboard</p>
+                <h2 class="text-2xl font-black text-amber-400 tracking-wider">Earnbeta Web Portal</h2>
+                <p class="text-xs text-gray-400">Sign in or register to access your web task dashboard</p>
             </div>
 
             <button onclick="loginWithGoogle()" class="w-full bg-white hover:bg-gray-100 text-gray-900 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center space-x-2 transition shadow cursor-pointer">
@@ -197,7 +197,7 @@
                     0.6 Pts / Sec
                 </div>
             </div>
-            <p class="text-xs text-gray-300">Play integrated games. Ads appear every 1 minute 30 seconds (90s). Progress and valid rewards are securely preserved!</p>
+            <p class="text-xs text-gray-300">Play web games. Interstitial ads appear every 1 minute 30 seconds (90s). Progress and rewards are securely tracked!</p>
             
             <div id="gameTasksFeedContainer" class="space-y-3 pt-2">
                 <p class="text-xs text-gray-500 text-center py-4">Loading games...</p>
@@ -220,7 +220,7 @@
         <!-- TAB 3: WATCH & EARN -->
         <div id="tab-watch-earn" class="tab-content space-y-4">
             <h2 class="text-base font-bold text-white"><i class="fas fa-tv text-amber-400 mr-2"></i> Watch & Earn Ads</h2>
-            <p class="text-xs text-gray-300">Watch rewarded ads to earn points instantly across Chrome, Opera, and other browsers.</p>
+            <p class="text-xs text-gray-300">Watch browser-compatible rewarded ads to earn points instantly across Chrome, Opera, Safari, and other browsers.</p>
             
             <div class="glow-card p-5 rounded-2xl border border-amber-500/30 space-y-4 shadow-xl">
                 <div class="flex justify-between items-center border-b border-gray-800 pb-3">
@@ -555,8 +555,8 @@
 
         let currentWelcomeStep = 0;
         const welcomeSteps = [
-            { title: "Welcome to Earnbeta", desc: "Watch videos, click PTC ads, spin the wheel, and cash out across all browsers!" },
-            { title: "Games & Watch & Earn", desc: "Play full-screen games with ad breaks or use dedicated cross-browser Watch & Earn ads." },
+            { title: "Welcome to Earnbeta", desc: "Watch videos, click PTC ads, spin the wheel, and cash out across all standard web browsers!" },
+            { title: "Games & Watch & Earn", desc: "Play full-screen web games with ad breaks or use dedicated web Watch & Earn ads." },
             { title: "Withdraw $5 - $100 Tiers", desc: "Accumulate at least 100,000 points to unlock direct crypto or fiat withdrawals!" }
         ];
 
@@ -716,8 +716,7 @@
         }
 
         /**
-         * Cross-browser compatible ad runner.
-         * Executes admin-configured ad scripts or SDK functions across Chrome, Opera, Safari, etc.
+         * Universal Cross-Browser Ad Execution Function (Optimized for Chrome, Opera, Safari)
          */
         async function playAdStrict() {
             return new Promise((resolve) => {
@@ -725,12 +724,11 @@
                 const safetyTimer = setTimeout(() => {
                     if (!adResolved) { 
                         adResolved = true; 
-                        resolve(true); // Fallback gracefully if ad frame is blocked by browser extensions or unsupported environment
+                        resolve(true); 
                     }
                 }, 2000);
 
                 try {
-                    // Check for admin custom ad script execution first
                     let dynamicScriptToRun = watchEarnConfig.adScript || gameSettings.adScript;
                     if (dynamicScriptToRun && dynamicScriptToRun.trim() !== "") {
                         try {
@@ -755,7 +753,6 @@
                         }
                     }
 
-                    // Standard Monetag SDK integration function check
                     if (typeof window.show_11870767 === 'function') {
                         window.show_11870767().then(() => {
                             if (!adResolved) { adResolved = true; clearTimeout(safetyTimer); resolve(true); }
@@ -763,7 +760,6 @@
                             if (!adResolved) { adResolved = true; clearTimeout(safetyTimer); resolve(true); }
                         });
                     } else {
-                        // Standard browser fallback simulation / completion pass
                         setTimeout(() => {
                             if (!adResolved) { adResolved = true; clearTimeout(safetyTimer); resolve(true); }
                         }, 1000);
@@ -1045,7 +1041,9 @@
                     await auth.signInWithEmailAndPassword(email, password);
                     showNotification("Signed in successfully!");
                 }
-            } catch (err) { showNotification(err.message); }
+            } catch (err) { 
+                showNotification(err.message); 
+            }
         }
 
         function logoutUser() { auth.signOut().then(() => window.location.reload()); }
@@ -1402,12 +1400,23 @@
             await incrementSpinCount(user.uid);
             await updateSpinCountUI();
 
-            db.collection('wallets').doc(user.uid).get().then(async doc => {
-                let points = doc.exists ? (doc.data().pointsBalance || 0) + 50 : 50;
-                db.collection('wallets').doc(user.uid).set({ pointsBalance: points }, { merge: true });
-                await logEarningsTransaction(user.uid, 50, "Lucky Spin Wheel Bonus");
-                showNotification("🎉 Congratulations! You won 50 bonus points!");
-            });
+            let spinRewardAmount = 50;
+            try {
+                const configDoc = await db.collection('settings').doc('spin_config').get();
+                if (configDoc.exists && configDoc.data().rewardAmount) {
+                    spinRewardAmount = Number(configDoc.data().rewardAmount);
+                }
+            } catch (err) {
+                console.warn("Could not fetch admin spin config, using default reward amount.");
+            }
+
+            const userRef = db.collection('wallets').doc(user.uid);
+            const doc = await userRef.get();
+            let points = doc.exists ? (doc.data().pointsBalance || 0) + spinRewardAmount : spinRewardAmount;
+            
+            await userRef.set({ pointsBalance: points }, { merge: true });
+            await logEarningsTransaction(user.uid, spinRewardAmount, "Lucky Spin Wheel Bonus");
+            showNotification(`🎉 Congratulations! You won ${spinRewardAmount} bonus points!`);
         }
 
         function openWithdrawModal() { document.getElementById('withdrawModal').classList.remove('hidden'); }
