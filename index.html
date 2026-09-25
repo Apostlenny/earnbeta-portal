@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Earnbeta - Telegram Mini App</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <!-- YouTube IFrame API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+
+    <!-- Monetag SDK -->
+    <script src='//libtl.com/sdk.js' data-zone='11870767' data-sdk='show_11870767'></script>
+
+    <style>
+        body { background-color: #0b0f19; font-family: system-ui, -apple-system, sans-serif; color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
+        .glow-card { background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .glow-button { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body class="bg-[#0b0f19] text-gray-100 antialiased pb-28">
+
+    <!-- WELCOME MODAL -->
+    <div id="welcomeIntroModal" class="fixed inset-0 z-[150] bg-[#0b0f19] flex flex-col justify-between p-6 hidden">
+        <div class="flex justify-between items-center pt-2">
+            <span class="text-xs font-bold text-amber-400 tracking-wider">🌟 EARNBETA WELCOME</span>
+            <button onclick="skipWelcomeIntro()" class="text-xs font-bold text-gray-400 hover:text-white cursor-pointer">Skip Intro</button>
+        </div>
+        <div class="space-y-6 text-center my-auto">
+            <div class="w-20 h-20 bg-amber-500/20 text-amber-400 rounded-3xl flex items-center justify-center mx-auto text-3xl shadow-xl border border-amber-500/30">
+                <i class="fas fa-coins"></i>
+            </div>
+            <div class="space-y-2">
+                <h2 id="introTitle" class="text-2xl font-black text-white tracking-wide">Welcome to Earnbeta</h2>
+                <p id="introDesc" class="text-xs text-gray-300 max-w-xs mx-auto leading-relaxed">Watch videos, complete PTC ads, Instagram promos, and cash out!</p>
+            </div>
+            <div class="flex justify-center space-x-1.5 pt-2">
+                <span class="w-2 h-2 rounded-full bg-amber-400" id="dot-0"></span>
+                <span class="w-2 h-2 rounded-full bg-gray-700" id="dot-1"></span>
+                <span class="w-2 h-2 rounded-full bg-gray-700" id="dot-2"></span>
+            </div>
+        </div>
+        <div>
+            <button onclick="nextWelcomeStep()" id="introNextBtn" class="w-full glow-button text-white font-bold py-3.5 rounded-2xl text-xs shadow-lg cursor-pointer">Next Step</button>
+        </div>
+    </div>
+
+    <!-- AUTH MODAL -->
+    <div id="authModal" class="fixed inset-0 z-[100] bg-[#0b0f19]/95 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glow-card w-full max-w-md p-6 rounded-2xl shadow-2xl border border-gray-800 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="text-center space-y-1">
+                <h2 class="text-2xl font-black text-amber-400 tracking-wider">Earnbeta Portal</h2>
+                <p class="text-xs text-gray-400">Sign in or register to access your task dashboard</p>
+            </div>
+
+            <button onclick="loginWithGoogle()" class="w-full bg-white hover:bg-gray-100 text-gray-900 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center space-x-2 transition shadow cursor-pointer">
+                <i class="fab fa-google text-red-500 text-base"></i>
+                <span>Continue with Google (Gmail)</span>
+            </button>
+
+            <div class="flex items-center my-3">
+                <div class="flex-grow border-t border-gray-800"></div>
+                <span class="px-3 text-[10px] text-gray-500 uppercase font-bold">Or Email & Password</span>
+                <div class="flex-grow border-t border-gray-800"></div>
+            </div>
+
+            <form id="emailAuthForm" onsubmit="handleEmailAuth(event)" class="space-y-3">
+                <div id="nameFieldWrapper" class="hidden">
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Full Name</label>
+                    <input type="text" id="authFullName" class="w-full bg-gray-900 border border-gray-800 rounded-xl p-2.5 text-xs text-white" placeholder="Oluwafemi Oguntayo">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Email Address</label>
+                    <input type="email" id="authEmail" required class="w-full bg-gray-900 border border-gray-800 rounded-xl p-2.5 text-xs text-white" placeholder="user@gmail.com">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Password</label>
+                    <input type="password" id="authPassword" required minlength="6" class="w-full bg-gray-900 border border-gray-800 rounded-xl p-2.5 text-xs text-white" placeholder="••••••••">
+                </div>
+                <button type="submit" id="authSubmitBtn" class="w-full glow-button text-white font-bold py-3 rounded-xl text-xs shadow-lg cursor-pointer">
+                    Sign In with Email
+                </button>
+            </form>
+
+            <div class="text-center pt-2">
+                <button type="button" onclick="toggleAuthMode()" id="authModeToggleText" class="text-xs text-amber-400 hover:underline cursor-pointer">
+                    Don't have an account? Sign Up
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toastNotification" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-[250] bg-gray-800 border border-gray-700 text-white px-5 py-2.5 rounded-full shadow-2xl font-bold text-xs transition-all duration-300 opacity-0 pointer-events-none">
+        Notification
+    </div>
+
+    <!-- GLOBAL TOP BANNER SLOT -->
+    <div id="topBannerContainer" class="max-w-md mx-auto px-4 pt-2"></div>
+
+    <!-- USER PORTAL CONTAINER -->
+    <div class="max-w-md mx-auto min-h-screen flex flex-col p-4 space-y-4">
+        
+        <!-- Header -->
+        <div class="flex justify-between items-center pt-1">
+            <div>
+                <p class="text-gray-400 text-xs">Welcome back,</p>
+                <h1 class="text-base font-bold tracking-tight text-white flex items-center">
+                    <span id="userDisplayName">User</span> <span class="ml-1 text-amber-400">👋</span>
+                </h1>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="bg-amber-500/15 border border-amber-500/30 text-amber-400 px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1">
+                    <span>⭐</span> <span id="userPointsBalance">0</span>
+                </div>
+                <div class="w-9 h-9 rounded-full border border-indigo-500 overflow-hidden bg-indigo-900 flex items-center justify-center font-bold text-white text-xs shadow" id="userAvatarLetter">U</div>
+                <button onclick="logoutUser()" title="Logout" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 p-2 rounded-full border border-red-500/30 transition cursor-pointer">
+                    <i class="fas fa-sign-out-alt text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- GLOBAL ANNOUNCEMENT BANNER -->
+        <div id="announcementBannerBox" class="bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl text-amber-300 text-xs flex items-center space-x-2 hidden">
+            <i class="fas fa-bullhorn shrink-0"></i>
+            <span id="announcementBannerText" class="font-medium">Announcement text goes here</span>
+        </div>
+
+        <!-- TAB 1: ACTIVE (HOME) -->
+        <div id="tab-active" class="tab-content active space-y-4">
+            <div class="glow-card rounded-2xl p-5 shadow-xl relative overflow-hidden">
+                <p class="text-[10px] font-medium text-indigo-300 uppercase tracking-wider">Points & USD Balance</p>
+                <h2 class="text-3xl font-black text-white mt-1 tracking-tight" id="userCashBalance">$0.00</h2>
+                <p class="text-xs text-amber-400 mt-1"><span id="userCardPoints">0</span> Points (Min 100,000 pts to withdraw)</p>
+                <div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-800/60">
+                    <span class="text-[11px] text-gray-400">Crypto & Fiat Gateways</span>
+                    <button onclick="openWithdrawModal()" class="glow-button text-white font-bold px-4 py-2 rounded-xl shadow-md flex items-center text-xs cursor-pointer">
+                        <i class="fas fa-wallet mr-1.5 text-xs"></i> WITHDRAW
+                    </button>
+                </div>
+            </div>
+
+            <!-- EARN CATEGORIES -->
+            <div>
+                <h3 class="text-xs font-bold text-gray-400 tracking-wider uppercase mb-3">Earn Categories</h3>
+                <div class="grid grid-cols-4 gap-2">
+                    <div onclick="filterTaskCategory('video')" class="glow-card p-2.5 rounded-xl border border-gray-800 hover:border-red-500/50 cursor-pointer transition text-center">
+                        <div class="w-7 h-7 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center mx-auto mb-1"><i class="fas fa-video text-[10px]"></i></div>
+                        <h4 class="font-bold text-[10px] text-white">Video</h4>
+                    </div>
+                    <div onclick="filterTaskCategory('ptc')" class="glow-card p-2.5 rounded-xl border border-gray-800 hover:border-emerald-500/50 cursor-pointer transition text-center">
+                        <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-1"><i class="fas fa-mouse-pointer text-[10px]"></i></div>
+                        <h4 class="font-bold text-[10px] text-white">PTC</h4>
+                    </div>
+                    <div onclick="filterTaskCategory('social')" class="glow-card p-2.5 rounded-xl border border-gray-800 hover:border-pink-500/50 cursor-pointer transition text-center">
+                        <div class="w-7 h-7 rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center mx-auto mb-1"><i class="fab fa-instagram text-[10px]"></i></div>
+                        <h4 class="font-bold text-[10px] text-white">Social</h4>
+                    </div>
+                    <div onclick="filterTaskCategory('read')" class="glow-card p-2.5 rounded-xl border border-gray-800 hover:border-amber-500/50 cursor-pointer transition text-center">
+                        <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-1"><i class="fas fa-book-open text-[10px]"></i></div>
+                        <h4 class="font-bold text-[10px] text-white">Read</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GLOBAL MIDDLE BANNER SLOT -->
+            <div id="midBannerContainer"></div>
+
+            <!-- Admin Tasks Feed -->
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-xs font-bold text-gray-400 tracking-wider uppercase">Live Task Feed</h3>
+                    <button onclick="filterTaskCategory('all')" class="text-[10px] text-amber-400 hover:underline">Show All</button>
+                </div>
+                <div id="tasksFeedContainer" class="space-y-3">
+                    <p class="text-xs text-gray-500 text-center py-4">Loading tasks from admin...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: GAMES -->
+        <div id="tab-games" class="tab-content space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-base font-bold text-white"><i class="fas fa-gamepad text-emerald-400 mr-2"></i> Play Games & Earn</h2>
+                <div class="bg-emerald-500/20 text-emerald-400 text-[10px] px-2.5 py-1 rounded-full font-bold border border-emerald-500/30" id="gameRateBadge">
+                    0.6 Pts / Sec
+                </div>
+            </div>
+            <p class="text-xs text-gray-300">Play integrated games. Ads appear every 1 minute 30 seconds (90s). Progress and valid rewards are securely preserved!</p>
+            
+            <div id="gameTasksFeedContainer" class="space-y-3 pt-2">
+                <p class="text-xs text-gray-500 text-center py-4">Loading games...</p>
+            </div>
+
+            <div class="glow-card p-5 rounded-2xl border border-purple-500/30 text-center space-y-3 relative overflow-hidden shadow-xl mt-4">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-500 text-white flex items-center justify-center mx-auto text-xl shadow-lg">
+                    <i class="fas fa-dharmachakra"></i>
+                </div>
+                <div>
+                    <h3 class="font-black text-sm text-white">Lucky Reward Spin Wheel</h3>
+                    <p class="text-xs text-gray-300 mt-0.5">Daily limit: <span id="spinCountDisplay" class="text-amber-400 font-bold">0</span>/20 spins used.</p>
+                </div>
+                <button onclick="openSpinWheel()" class="w-full glow-button text-white font-bold py-3 rounded-xl text-xs cursor-pointer shadow">
+                    Spin The Wheel Now
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 3: WATCH & EARN -->
+        <div id="tab-watch-earn" class="tab-content space-y-4">
+            <h2 class="text-base font-bold text-white"><i class="fas fa-tv text-amber-400 mr-2"></i> Watch & Earn Ads</h2>
+            <p class="text-xs text-gray-300">Watch rewarded ads to earn points instantly. Fully separate from the game ad system.</p>
+            
+            <div class="glow-card p-5 rounded-2xl border border-amber-500/30 space-y-4 shadow-xl">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                    <div>
+                        <span class="text-[10px] text-amber-400 font-bold uppercase">Status & Limits</span>
+                        <h3 class="font-bold text-sm text-white">Daily Watch & Earn Cycle</h3>
+                    </div>
+                    <div class="bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full text-xs font-bold border border-amber-500/30">
+                        Reward: <span id="weRewardDisplay">1</span> Pts
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div class="bg-gray-900/80 p-3 rounded-xl border border-gray-800">
+                        <span class="text-gray-400 text-[10px] uppercase">Ads Watched Today</span>
+                        <p class="text-base font-black text-white mt-0.5"><span id="weWatchedCount">0</span>/<span id="weDailyLimitDisplay">30</span></p>
+                    </div>
+                    <div class="bg-gray-900/80 p-3 rounded-xl border border-gray-800">
+                        <span class="text-gray-400 text-[10px] uppercase">Ads Remaining</span>
+                        <p class="text-base font-black text-amber-400 mt-0.5" id="weRemainingCount">30</p>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900 p-3 rounded-xl border border-gray-800 text-center space-y-1">
+                    <span class="text-[10px] text-gray-400 uppercase">Next Ad Available In</span>
+                    <p id="weCooldownTimerDisplay" class="text-lg font-black text-emerald-400">Ready</p>
+                </div>
+
+                <div id="weLimitMessage" class="hidden bg-red-500/10 border border-red-500/30 p-3 rounded-xl text-center text-xs text-red-300 font-medium">
+                    You have reached today's Watch & Earn limit. Your watch limit will reset after 24 hours.
+                </div>
+
+                <button id="weWatchBtn" onclick="executeWatchAndEarnAd()" class="w-full glow-button text-white font-bold py-3.5 rounded-xl text-xs shadow-lg cursor-pointer flex items-center justify-center space-x-2">
+                    <i class="fas fa-play-circle text-base"></i>
+                    <span id="weWatchBtnText">Watch Rewarded Ad</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 4: EARN (AFFILIATE & ADVERTISING SUPPORT) -->
+        <div id="tab-earn" class="tab-content space-y-4">
+            <h2 class="text-base font-bold text-white"><i class="fas fa-coins text-amber-400 mr-2"></i> Affiliate & Advertising</h2>
+            
+            <div class="glow-card p-4 rounded-2xl border border-gray-800 space-y-3">
+                <h3 class="font-bold text-xs text-amber-400 uppercase">Invite & Earn Points</h3>
+                <p class="text-xs text-gray-300">Invite friends using your Telegram Mini App referral link to accumulate points toward your cashout goals!</p>
+                <div class="flex items-center space-x-2">
+                    <input type="text" id="referralLinkInput" readonly class="w-full bg-gray-900 border border-gray-800 rounded-xl p-2.5 text-xs text-gray-300">
+                    <button onclick="copyReferralLink()" class="glow-button text-white px-4 py-2.5 rounded-xl text-xs font-bold shrink-0 cursor-pointer">Copy</button>
+                </div>
+            </div>
+
+            <!-- WhatsApp and Telegram Advertising Support Section -->
+            <div class="glow-card p-4 rounded-2xl border border-indigo-500/30 space-y-3">
+                <h3 class="font-bold text-xs text-indigo-400 uppercase"><i class="fas fa-bullhorn mr-1"></i> Advertise Your Business</h3>
+                <p class="text-xs text-gray-300">Want to advertise your Platform, App, Product, Website, Service, or Business? Contact our admin directly via WhatsApp or Telegram!</p>
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <a id="supportWhatsAppBtn" href="https://wa.me/2348123481254" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center space-x-2 transition shadow">
+                        <i class="fab fa-whatsapp text-sm"></i>
+                        <span>WhatsApp Ad</span>
+                    </a>
+                    <a id="supportTelegramBtn" href="https://t.me/Apostleenny" target="_blank" class="bg-sky-600 hover:bg-sky-500 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center space-x-2 transition shadow">
+                        <i class="fab fa-telegram text-sm"></i>
+                        <span>Telegram Ad</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: WALLET -->
+        <div id="tab-wallet" class="tab-content space-y-4">
+            <h2 class="text-base font-bold text-white"><i class="fas fa-wallet text-amber-400 mr-2"></i> Wallet & Withdrawals</h2>
+            <div class="glow-card p-5 rounded-2xl border border-gray-800 space-y-4">
+                <div>
+                    <p class="text-xs text-gray-400">Total Points Accumulated</p>
+                    <h3 class="text-2xl font-black text-amber-400" id="walletTabPoints">0 Points</h3>
+                    <p class="text-[11px] text-gray-400 mt-1">USD Value: <span id="walletTabUSD" class="text-white font-bold">$0.00</span></p>
+                </div>
+                <button onclick="openWithdrawModal()" class="w-full glow-button text-white font-bold py-3 rounded-xl text-xs cursor-pointer shadow">Request $5 - $100 Payout</button>
+            </div>
+
+            <div class="glow-card p-4 rounded-2xl border border-gray-800 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-xs text-amber-400 uppercase"><i class="fas fa-receipt mr-1"></i> Earnings Ledger (Audit Log)</h3>
+                    <span class="text-[10px] text-gray-400">Live Record</span>
+                </div>
+                <div id="earningsLedgerContainer" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    <p class="text-[11px] text-gray-500 text-center py-3">Loading transaction history...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 6: PROFILE -->
+        <div id="tab-profile" class="tab-content space-y-4">
+            <h2 class="text-base font-bold text-white"><i class="fas fa-user text-indigo-400 mr-2"></i> User Profile</h2>
+            <div class="glow-card p-5 rounded-2xl border border-gray-800 space-y-4">
+                <div class="flex items-center space-x-4 border-b border-gray-800 pb-4">
+                    <div id="profileAvatarBig" class="w-14 h-14 rounded-full bg-indigo-900 border-2 border-indigo-500 flex items-center justify-center text-xl font-bold text-white">U</div>
+                    <div>
+                        <h3 id="profileFullName" class="font-bold text-sm text-white">User Name</h3>
+                        <p id="profileEmail" class="text-xs text-gray-400">user@gmail.com</p>
+                        <span class="inline-block mt-1 bg-indigo-500/20 text-indigo-300 text-[10px] px-2 py-0.5 rounded font-semibold uppercase">Verified Account</span>
+                    </div>
+                </div>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between py-1 border-b border-gray-800/50"><span class="text-gray-400">Account ID:</span> <span id="profileUserId" class="font-mono text-gray-200">...</span></div>
+                    <div class="flex justify-between py-1 border-b border-gray-800/50"><span class="text-gray-400">Total Points:</span> <span id="profilePoints" class="font-bold text-amber-400">0</span></div>
+                    <div class="flex justify-between py-1"><span class="text-gray-400">App Status:</span> <span class="text-emerald-400 font-bold">Active 🟢</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GLOBAL BOTTOM BANNER SLOT -->
+        <div id="botBannerContainer"></div>
+
+        <!-- BOTTOM NAVIGATION BAR -->
+        <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#0f172a]/95 backdrop-blur-md border-t border-gray-800 h-16 flex justify-around items-center px-1 z-40">
+            <button onclick="switchTab('active', this)" class="nav-tab-btn flex flex-col items-center text-amber-400 text-[9px] font-semibold space-y-0.5 cursor-pointer">
+                <i class="fas fa-house text-sm"></i><span>Active</span>
+            </button>
+            <button onclick="switchTab('games', this)" class="nav-tab-btn flex flex-col items-center text-gray-400 hover:text-white text-[9px] font-medium space-y-0.5 cursor-pointer">
+                <i class="fas fa-gamepad text-sm"></i><span>Games</span>
+            </button>
+            <button onclick="switchTab('watch-earn', this)" class="nav-tab-btn flex flex-col items-center text-gray-400 hover:text-white text-[9px] font-medium space-y-0.5 cursor-pointer">
+                <i class="fas fa-tv text-sm"></i><span>Watch</span>
+            </button>
+            <button onclick="switchTab('earn', this)" class="nav-tab-btn flex flex-col items-center text-gray-400 hover:text-white text-[9px] font-medium space-y-0.5 cursor-pointer">
+                <i class="fas fa-coins text-sm"></i><span>Earn</span>
+            </button>
+            <button onclick="switchTab('wallet', this)" class="nav-tab-btn flex flex-col items-center text-gray-400 hover:text-white text-[9px] font-medium space-y-0.5 cursor-pointer">
+                <i class="fas fa-wallet text-sm"></i><span>Wallet</span>
+            </button>
+            <button onclick="switchTab('profile', this)" class="nav-tab-btn flex flex-col items-center text-gray-400 hover:text-white text-[9px] font-medium space-y-0.5 cursor-pointer">
+                <i class="fas fa-user text-sm"></i><span>Profile</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- TASK VIEWER MODAL -->
+    <div id="articleReaderModal" class="fixed inset-0 z-50 bg-[#0b0f19] flex flex-col hidden overflow-y-auto">
+        <div id="modalHeaderBar" class="sticky top-0 bg-[#0f172a] border-b border-gray-800 p-4 flex justify-between items-center z-20">
+            <div>
+                <span id="readerTaskCategory" class="text-[10px] font-bold text-amber-400 uppercase">Task</span>
+                <h3 id="readerTaskTitle" class="text-sm font-bold text-white truncate max-w-[200px]">Loading...</h3>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="bg-amber-500/20 border border-amber-500/40 text-amber-400 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5">
+                    <i class="fas fa-clock"></i>
+                    <span id="readerCountdownTimer">15s</span>
+                </div>
+                <button onclick="closeArticleReader()" class="text-gray-400 hover:text-white p-2 cursor-pointer"><i class="fas fa-times text-lg"></i></button>
+            </div>
+        </div>
+
+        <div class="p-4 space-y-4 flex-1 max-w-md mx-auto w-full flex flex-col" id="modalBodyWrapper">
+            <div id="tabVisibilityWarning" class="glow-card p-3 rounded-xl border border-amber-500/40 bg-amber-500/10 text-center space-y-1 hidden">
+                <div class="text-amber-400 font-bold text-xs flex items-center justify-center">
+                    <i class="fas fa-triangle-exclamation mr-1.5"></i> Timer Paused (App Minimized)
+                </div>
+                <p id="tabWarningSubtext" class="text-[10px] text-gray-300">Switch back to keep counting task time.</p>
+            </div>
+
+            <div id="inSiteContentFrame" class="glow-card rounded-2xl p-2 border border-gray-800 space-y-2 text-gray-200 text-xs flex-1 flex flex-col min-h-[350px]"></div>
+            
+            <div id="multiAdSequenceBox" class="glow-card p-4 rounded-2xl border border-amber-500/30 text-center space-y-3 hidden">
+                <div class="bg-indigo-600 text-white text-[9px] font-bold px-2 py-0.5 rounded inline-block">AD SEQUENCE REQUIRED (<span id="adStepIndicator">1</span>/3)</div>
+                <p id="adSequenceStatusText" class="text-xs text-gray-300">Watch the required ads to proceed toward your reward claim.</p>
+                <button onclick="handleNextMultiAd()" id="multiAdBtn" class="w-full glow-button text-white font-bold py-3 rounded-xl text-xs shadow-lg cursor-pointer">
+                    <i class="fas fa-ad mr-1"></i> Watch Ad 1 of 3
+                </button>
+            </div>
+
+            <div id="articleCompletionBox" class="glow-card p-4 rounded-2xl border border-emerald-500/30 text-center space-y-3 hidden">
+                <div class="bg-emerald-600 text-white text-[9px] font-bold px-2 py-0.5 rounded inline-block animate-pulse">ALL ADS COMPLETED</div>
+                <p class="text-xs text-gray-300">You have completed all verification sequences successfully.</p>
+                <button onclick="claimTaskReward()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-xs shadow-lg cursor-pointer">
+                    <i class="fas fa-check-circle mr-1"></i> Claim Reward Points
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME PLAYER MODAL -->
+    <div id="gamePlayerModal" class="fixed inset-0 z-50 bg-[#0b0f19] flex flex-col hidden">
+        <div class="bg-[#0f172a] px-4 py-3 flex justify-between items-center border-b border-gray-800 z-10">
+            <span class="text-xs text-emerald-400 font-bold flex items-center truncate max-w-[200px]">
+                <i class="fas fa-gamepad mr-1.5 animate-pulse"></i> <span id="gameModalTitle">Game Title</span>
+            </span>
+            <div class="flex items-center space-x-3">
+                <div class="bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5">
+                    <i class="fas fa-coins"></i>
+                    <span id="gameTimerDisplay">Time: 0s | +0 pts</span>
+                </div>
+                <button onclick="closeGamePlayer()" class="text-gray-400 hover:text-white p-2 cursor-pointer"><i class="fas fa-times text-lg"></i></button>
+            </div>
+        </div>
+        
+        <div class="flex-1 w-full bg-black relative">
+            <iframe id="gameIframe" src="" class="w-full h-full border-0" frameborder="0" allowfullscreen></iframe>
+            
+            <div id="gameAdOverlay" class="absolute inset-0 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-6 hidden z-30 space-y-4 text-center">
+                <div class="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-2xl border border-amber-500/40 animate-pulse">
+                    <i class="fas fa-ad"></i>
+                </div>
+                <h3 class="text-lg font-black text-amber-400" id="gameAdModalTitle">Sponsored Ad Break</h3>
+                <p class="text-xs text-gray-300 max-w-xs leading-relaxed" id="gameAdModalDesc">
+                    Complete this quick ad message to claim your reward and resume your game!
+                </p>
+                <button onclick="executeGameAdBreak()" class="w-full max-w-xs glow-button text-white font-bold py-3.5 rounded-xl text-xs shadow-lg cursor-pointer">
+                    Watch Ad & Continue Game
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WITHDRAWAL MODAL -->
+    <div id="withdrawModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="glow-card w-full max-w-md p-6 rounded-2xl border border-gray-800 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center">
+                <h3 class="text-base font-bold text-white"><i class="fas fa-wallet mr-2 text-amber-400"></i> Withdraw Rewards ($5 - $100)</h3>
+                <button onclick="closeWithdrawModal()" class="text-gray-400 hover:text-white p-1 cursor-pointer"><i class="fas fa-times text-lg"></i></button>
+            </div>
+            
+            <p class="text-[11px] text-gray-300 bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-xl">
+                ⚠️ Minimum threshold is <span class="font-bold text-white">100,000 Points ($5)</span>. Select your target tier:
+            </p>
+
+            <div class="grid grid-cols-3 gap-2 py-1">
+                <div onclick="selectWithdrawTier(5, 100000)" class="tier-card glow-card p-3 rounded-xl border border-amber-400 text-center cursor-pointer">
+                    <div class="text-sm font-black text-amber-400">$5</div>
+                    <div class="text-[10px] text-gray-300 font-bold mt-1">100k Pts</div>
+                </div>
+                <div onclick="selectWithdrawTier(10, 200000)" class="tier-card glow-card p-3 rounded-xl border border-gray-800 text-center cursor-pointer">
+                    <div class="text-sm font-black text-white">$10</div>
+                    <div class="text-[10px] text-gray-400 font-bold mt-1">200k Pts</div>
+                </div>
+                <div onclick="selectWithdrawTier(20, 400000)" class="tier-card glow-card p-3 rounded-xl border border-gray-800 text-center cursor-pointer">
+                    <div class="text-sm font-black text-white">$20</div>
+                    <div class="text-[10px] text-gray-400 font-bold mt-1">400k Pts</div>
+                </div>
+            </div>
+
+            <form onsubmit="submitWithdrawal(event)" class="space-y-3 pt-2">
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Selected Payout Tier</label>
+                    <input type="text" id="selectedTierDisplay" readonly class="w-full bg-gray-900 border border-gray-800 rounded-xl p-2.5 text-xs text-amber-400 font-bold" value="$5 Tier (100,000 Points Required)">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Select Payout Gateway</label>
+                    <select id="withdrawMethod" onchange="updateWithdrawFields()" class="w-full bg-gray-900 border border-gray-800 rounded-xl p-2.5 text-xs text-white">
+                        <option value="crypto">Binance Wallet / USDT (BEP20 / TRC20)</option>
+                        <option value="bank">Local Bank Transfer (Fiat)</option>
+                        <option value="airtime">Mobile Airtime Recharge</option>
+                    </select>
+                </div>
+                <div>
+                    <label id="gatewayLabel1" class="block text-xs font-medium text-gray-400 mb-1">USDT Wallet Address</label>
+                    <input type="text" id="withdrawField1" required class="w-full bg-gray-900 border border-gray-800 rounded-xl p-2.5 text-xs text-white" placeholder="0xYourAddressHere">
+                </div>
+                <div>
+                    <label id="gatewayLabel2" class="block text-xs font-medium text-gray-400 mb-1">Account Holder Name</label>
+                    <input type="text" id="withdrawField2" required class="w-full bg-gray-900 border border-gray-800 rounded-xl p-2.5 text-xs text-white" placeholder="Your Name">
+                </div>
+                <button type="submit" class="w-full glow-button text-white font-bold py-3 rounded-xl text-xs shadow-lg cursor-pointer">Submit Payout Request</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyDxORwynziDMGYKvHM1snuvloflZw6adJk",
+          authDomain: "earnbeta.firebaseapp.com",
+          databaseURL: "https://earnbeta-default-rtdb.firebaseio.com",
+          projectId: "earnbeta",
+          storageBucket: "earnbeta.firebasestorage.app",
+          messagingSenderId: "14937126793",
+          appId: "1:14937126793:web:09cd85c1b03b7cf18c5358",
+          measurementId: "G-M3J2GLKPQD"
+        };
+
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let selectedTaskToExecute = null;
+        let readerTimerInterval = null;
+        let gameSessionTimer = null;
+        let currentTaskCategoryFilter = 'all';
+        let chosenWithdrawUSD = 5;
+        let chosenWithdrawPoints = 100000;
+        let isSignUpMode = false;
+        let adSequenceCount = 0;
+
+        let ytPlayer = null;
+        let isVideoPlaying = false;
+        let taskTimeRemaining = 15;
+        let isTabActive = true;
+        let taskActiveFlow = false;
+
+        let gameSettings = {
+            pointsPerSecond: 0.6,
+            adIntervalSeconds: 90,
+            adRewardPoints: 1,
+            maxGameReward: 10000,
+            gameRewardsEnabled: true,
+            adsEnabled: true,
+            adScript: ""
+        };
+
+        let watchEarnConfig = {
+            rewardPerAd: 1,
+            cooldownSeconds: 120,
+            dailyLimit: 30,
+            adProvider: "Monetag / Custom",
+            adScript: "",
+            status: "active"
+        };
+
+        let watchEarnState = {
+            adsWatchedToday: 0,
+            lastAdTime: 0,
+            resetTimestamp: 0
+        };
+
+        let activeGameSession = {
+            startTime: null,
+            elapsedSeconds: 0,
+            accumulatedSessionPoints: 0,
+            sessionId: null,
+            isPausedForAd: false
+        };
+
+        let currentWelcomeStep = 0;
+        const welcomeSteps = [
+            { title: "Welcome to Earnbeta", desc: "Watch videos, click PTC ads, spin the wheel, and cash out!" },
+            { title: "Games & Watch & Earn", desc: "Play full-screen games with 90s ad breaks or use dedicated Watch & Earn ads." },
+            { title: "Withdraw $5 - $100 Tiers", desc: "Accumulate at least 100,000 points to unlock direct crypto or fiat withdrawals!" }
+        ];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initTabVisibilityListener();
+            loadGlobalBanners();
+            loadAnnouncementBanner();
+            loadGameSettingsConfig();
+            loadWatchEarnConfig();
+            loadSupportContactConfig();
+            setInterval(updateWatchEarnUIClock, 1000);
+        });
+
+        function loadGameSettingsConfig() {
+            db.collection('settings').doc('game_config').onSnapshot(doc => {
+                if(doc.exists) {
+                    const data = doc.data();
+                    gameSettings = {
+                        pointsPerSecond: data.pointsPerSecond ?? 0.6,
+                        adIntervalSeconds: data.adIntervalSeconds ?? 90,
+                        adRewardPoints: data.adRewardPoints ?? 1,
+                        maxGameReward: data.maxGameReward ?? 10000,
+                        gameRewardsEnabled: data.gameRewardsEnabled ?? true,
+                        adsEnabled: data.adsEnabled ?? true,
+                        adScript: data.adScript || ""
+                    };
+                    const badge = document.getElementById('gameRateBadge');
+                    if(badge) badge.innerText = `${gameSettings.pointsPerSecond} Pts / Sec`;
+                }
+            });
+        }
+
+        function loadWatchEarnConfig() {
+            db.collection('settings').doc('watch_earn_config').onSnapshot(doc => {
+                if(doc.exists) {
+                    const data = doc.data();
+                    watchEarnConfig = {
+                        rewardPerAd: data.rewardPerAd ?? 1,
+                        cooldownSeconds: data.cooldownSeconds ?? 120,
+                        dailyLimit: data.dailyLimit ?? 30,
+                        adProvider: data.adProvider || "Default",
+                        adScript: data.adScript || "",
+                        status: data.status || "active"
+                    };
+                    const rewDisp = document.getElementById('weRewardDisplay');
+                    const limitDisp = document.getElementById('weDailyLimitDisplay');
+                    if(rewDisp) rewDisp.innerText = watchEarnConfig.rewardPerAd;
+                    if(limitDisp) limitDisp.innerText = watchEarnConfig.dailyLimit;
+                    updateWatchEarnUIState();
+                }
+            });
+        }
+
+        function loadSupportContactConfig() {
+            db.collection('settings').doc('support_config').onSnapshot(doc => {
+                if(doc.exists) {
+                    const data = doc.data();
+                    const waBtn = document.getElementById('supportWhatsAppBtn');
+                    const tgBtn = document.getElementById('supportTelegramBtn');
+                    if(waBtn && data.whatsapp) waBtn.href = `https://wa.me/${data.whatsapp.replace(/[^0-9]/g, '')}`;
+                    if(tgBtn && data.telegram) tgBtn.href = `https://t.me/${data.telegram.replace('@', '')}`;
+                }
+            });
+        }
+
+        function loadGlobalBanners() {
+            db.collection('settings').doc('global_banners').onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    renderBannerSlot('topBannerContainer', data.topBanner);
+                    renderBannerSlot('midBannerContainer', data.midBanner);
+                    renderBannerSlot('botBannerContainer', data.botBanner);
+                }
+            });
+        }
+
+        function renderBannerSlot(containerId, htmlContent) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            if (!htmlContent || htmlContent.trim() === "") {
+                container.innerHTML = "";
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="w-full my-2 bg-gray-900/60 rounded-xl border border-gray-800/80 p-2 overflow-hidden text-center shadow-md">
+                    ${htmlContent}
+                </div>
+            `;
+            const scripts = container.querySelectorAll('script');
+            scripts.forEach(oldScript => {
+                const newScript = document.createElement('script');
+                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                oldScript.parentNode.replaceChild(newScript, oldScript);
+            });
+        }
+
+        function loadAnnouncementBanner() {
+            db.collection('settings').doc('announcement').onSnapshot(doc => {
+                if (doc.exists && doc.data().isActive && doc.data().text) {
+                    document.getElementById('announcementBannerText').innerText = doc.data().text;
+                    document.getElementById('announcementBannerBox').classList.remove('hidden');
+                } else {
+                    document.getElementById('announcementBannerBox').classList.add('hidden');
+                }
+            });
+        }
+
+        function initTabVisibilityListener() {
+            document.addEventListener("visibilitychange", () => {
+                const warningBanner = document.getElementById('tabVisibilityWarning');
+                if (document.hidden) {
+                    isTabActive = false;
+                    if (warningBanner && taskActiveFlow) warningBanner.classList.remove('hidden');
+                } else {
+                    isTabActive = true;
+                    if (warningBanner) warningBanner.classList.add('hidden');
+                }
+            });
+        }
+
+        function checkWelcomeIntro() {
+            if (!localStorage.getItem('earnbeta_intro_seen')) {
+                document.getElementById('welcomeIntroModal').classList.remove('hidden');
+                updateWelcomeStepUI();
+            }
+        }
+
+        function updateWelcomeStepUI() {
+            document.getElementById('introTitle').innerText = welcomeSteps[currentWelcomeStep].title;
+            document.getElementById('introDesc').innerText = welcomeSteps[currentWelcomeStep].desc;
+            for(let i=0; i<3; i++) {
+                const dot = document.getElementById(`dot-${i}`);
+                dot.className = (i === currentWelcomeStep) ? "w-2 h-2 rounded-full bg-amber-400" : "w-2 h-2 rounded-full bg-gray-700";
+            }
+            document.getElementById('introNextBtn').innerText = (currentWelcomeStep === 2) ? "Get Started Now" : "Next Step";
+        }
+
+        function nextWelcomeStep() {
+            currentWelcomeStep++;
+            if(currentWelcomeStep >= welcomeSteps.length) skipWelcomeIntro();
+            else updateWelcomeStepUI();
+        }
+
+        function skipWelcomeIntro() {
+            localStorage.setItem('earnbeta_intro_seen', 'true');
+            document.getElementById('welcomeIntroModal').classList.add('hidden');
+        }
+
+        function showNotification(msg) {
+            const toast = document.getElementById('toastNotification');
+            toast.innerText = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+        }
+
+        async function playAdStrict() {
+            return new Promise((resolve) => {
+                let adResolved = false;
+                const safetyTimer = setTimeout(() => {
+                    if (!adResolved) { adResolved = true; resolve(true); }
+                }, 1500);
+
+                try {
+                    if (typeof window.show_11870767 === 'function') {
+                        window.show_11870767().then(() => {
+                            if (!adResolved) { adResolved = true; clearTimeout(safetyTimer); resolve(true); }
+                        }).catch(() => {
+                            if (!adResolved) { adResolved = true; clearTimeout(safetyTimer); resolve(true); }
+                        });
+                    } else {
+                        if (!adResolved) { adResolved = true; clearTimeout(safetyTimer); resolve(true); }
+                    }
+                } catch (err) {
+                    if (!adResolved) { adResolved = true; clearTimeout(safetyTimer); resolve(true); }
+                }
+            });
+        }
+
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+                btn.classList.remove('text-amber-400', 'font-semibold');
+                btn.classList.add('text-gray-400', 'font-medium');
+            });
+            if (btnElement) {
+                btnElement.classList.remove('text-gray-400', 'font-medium');
+                btnElement.classList.add('text-amber-400', 'font-semibold');
+            }
+        }
+
+        async function logEarningsTransaction(userId, points, description) {
+            try {
+                await db.collection('users').doc(userId).collection('earnings_log').add({
+                    points: points,
+                    description: description,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                loadEarningsLedger(userId);
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadEarningsLedger(userId) {
+            const container = document.getElementById('earningsLedgerContainer');
+            if(!container) return;
+            try {
+                const snapshot = await db.collection('users').doc(userId).collection('earnings_log').orderBy('timestamp', 'desc').limit(20).get();
+                if(snapshot.empty) {
+                    container.innerHTML = `<p class="text-[11px] text-gray-500 text-center py-3">No transactions recorded yet.</p>`;
+                    return;
+                }
+                container.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const dateStr = data.timestamp ? data.timestamp.toDate().toLocaleString() : 'Just now';
+                    container.innerHTML += `
+                        <div class="bg-gray-900/80 p-2.5 rounded-xl border border-gray-800 flex justify-between items-center text-[11px]">
+                            <div>
+                                <p class="font-bold text-white">${data.description}</p>
+                                <p class="text-[9px] text-gray-400">${dateStr}</p>
+                            </div>
+                            <span class="text-emerald-400 font-black">+${data.points} Pts</span>
+                        </div>
+                    `;
+                });
+            } catch(e) { container.innerHTML = `<p class="text-[11px] text-red-400 text-center py-3">Could not load ledger.</p>`; }
+        }
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                document.getElementById('authModal').classList.add('hidden');
+                document.getElementById('welcomeIntroModal').classList.add('hidden');
+                
+                const name = user.displayName || user.email.split('@')[0] || "User";
+                const email = user.email || "";
+                
+                document.getElementById('userDisplayName').innerText = name;
+                document.getElementById('userAvatarLetter').innerText = name.charAt(0).toUpperCase();
+                document.getElementById('profileFullName').innerText = name;
+                document.getElementById('profileEmail').innerText = email;
+                document.getElementById('profileAvatarBig').innerText = name.charAt(0).toUpperCase();
+                document.getElementById('profileUserId').innerText = user.uid.substring(0, 12) + "...";
+                
+                document.getElementById('referralLinkInput').value = `https://t.me/Earnbeta_bot/app?startapp=ref_${user.uid}`;
+
+                db.collection('wallets').doc(user.uid).onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        const points = data.pointsBalance || 0;
+                        const usdValue = (points / 20000).toFixed(2);
+                        document.getElementById('userCashBalance').innerText = `$${usdValue}`;
+                        document.getElementById('userCardPoints').innerText = points.toLocaleString();
+                        document.getElementById('userPointsBalance').innerText = points.toLocaleString();
+                        document.getElementById('walletTabPoints').innerText = `${points.toLocaleString()} Points`;
+                        document.getElementById('walletTabUSD').innerText = `$${usdValue}`;
+                        document.getElementById('profilePoints').innerText = points.toLocaleString();
+                    } else {
+                        db.collection('wallets').doc(user.uid).set({ pointsBalance: 0 });
+                    }
+                });
+
+                loadUserWatchEarnState(user.uid);
+                updateSpinCountUI();
+                loadUserTasksFeed();
+                loadGameTasksFeed();
+                loadEarningsLedger(user.uid);
+            } else {
+                checkWelcomeIntro();
+                document.getElementById('authModal').classList.remove('hidden');
+            }
+        });
+
+        async function loadUserWatchEarnState(userId) {
+            const now = Date.now();
+            const docRef = db.collection('users').doc(userId).collection('watch_earn').doc('status');
+            const doc = await docRef.get();
+            
+            if (doc.exists) {
+                const data = doc.data();
+                const resetTime = data.resetTimestamp || (now + 86400000);
+                
+                if (now >= resetTime) {
+                    watchEarnState = {
+                        adsWatchedToday: 0,
+                        lastAdTime: 0,
+                        resetTimestamp: now + 86400000
+                    };
+                    await docRef.set(watchEarnState);
+                } else {
+                    watchEarnState = {
+                        adsWatchedToday: data.adsWatchedToday || 0,
+                        lastAdTime: data.lastAdTime || 0,
+                        resetTimestamp: resetTime
+                    };
+                }
+            } else {
+                watchEarnState = {
+                    adsWatchedToday: 0,
+                    lastAdTime: 0,
+                    resetTimestamp: now + 86400000
+                };
+                await docRef.set(watchEarnState);
+            }
+            updateWatchEarnUIState();
+        }
+
+        function updateWatchEarnUIState() {
+            const watched = watchEarnState.adsWatchedToday;
+            const limit = watchEarnConfig.dailyLimit;
+            const remaining = Math.max(0, limit - watched);
+
+            const watchedEl = document.getElementById('weWatchedCount');
+            const remEl = document.getElementById('weRemainingCount');
+            const limitMsg = document.getElementById('weLimitMessage');
+            const watchBtn = document.getElementById('weWatchBtn');
+
+            if (watchedEl) watchedEl.innerText = watched;
+            if (remEl) remEl.innerText = remaining;
+
+            if (watched >= limit) {
+                if (limitMsg) limitMsg.classList.remove('hidden');
+                if (watchBtn) {
+                    watchBtn.disabled = true;
+                    watchBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    document.getElementById('weWatchBtnText').innerText = "Daily Limit Reached";
+                }
+            } else {
+                if (limitMsg) limitMsg.classList.add('hidden');
+                if (watchBtn) {
+                    watchBtn.disabled = false;
+                    watchBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    document.getElementById('weWatchBtnText').innerText = "Watch Rewarded Ad";
+                }
+            }
+        }
+
+        function updateWatchEarnUIClock() {
+            const now = Date.now();
+            const lastTime = watchEarnState.lastAdTime || 0;
+            const cooldownMs = watchEarnConfig.cooldownSeconds * 1000;
+            const elapsed = now - lastTime;
+            const timerEl = document.getElementById('weCooldownTimerDisplay');
+            const watchBtn = document.getElementById('weWatchBtn');
+
+            if (!timerEl) return;
+
+            if (elapsed < cooldownMs) {
+                const remainingSec = Math.ceil((cooldownMs - elapsed) / 1000);
+                const mins = Math.floor(remainingSec / 60);
+                const secs = remainingSec % 60;
+                timerEl.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                timerEl.className = "text-lg font-black text-amber-400";
+                
+                if (watchEarnState.adsWatchedToday < watchEarnConfig.dailyLimit && watchBtn) {
+                    watchBtn.disabled = true;
+                    watchBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            } else {
+                timerEl.innerText = "Ready 🟢";
+                timerEl.className = "text-lg font-black text-emerald-400";
+                if (watchEarnState.adsWatchedToday < watchEarnConfig.dailyLimit && watchBtn) {
+                    watchBtn.disabled = false;
+                    watchBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        }
+
+        async function executeWatchAndEarnAd() {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const now = Date.now();
+            const cooldownMs = watchEarnConfig.cooldownSeconds * 1000;
+            if (now - (watchEarnState.lastAdTime || 0) < cooldownMs) {
+                showNotification("⚠️ Please wait for the cooldown period to end.");
+                return;
+            }
+
+            if (watchEarnState.adsWatchedToday >= watchEarnConfig.dailyLimit) {
+                showNotification("⚠️ You have reached today's Watch & Earn limit.");
+                return;
+            }
+
+            const adWatched = await playAdStrict();
+            if (!adWatched) {
+                showNotification("Ad verification failed or cancelled.");
+                return;
+            }
+
+            watchEarnState.adsWatchedToday++;
+            watchEarnState.lastAdTime = Date.now();
+
+            await db.collection('users').doc(user.uid).collection('watch_earn').doc('status').set({
+                adsWatchedToday: watchEarnState.adsWatchedToday,
+                lastAdTime: watchEarnState.lastAdTime,
+                resetTimestamp: watchEarnState.resetTimestamp
+            }, { merge: true });
+
+            const reward = watchEarnConfig.rewardPerAd;
+            const userRef = db.collection('wallets').doc(user.uid);
+            const doc = await userRef.get();
+            let currentPoints = doc.exists ? (doc.data().pointsBalance || 0) : 0;
+
+            await userRef.set({ pointsBalance: currentPoints + reward }, { merge: true });
+            await logEarningsTransaction(user.uid, reward, "Watch & Earn Ad Reward");
+
+            updateWatchEarnUIState();
+            showNotification(`🎉 Watch & Earn Ad completed! +${reward} Points added.`);
+        }
+
+        function loginWithGoogle() {
+            auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(() => {
+                showNotification("Google Popup blocked. Try Email & Password.");
+            });
+        }
+
+        function toggleAuthMode() {
+            isSignUpMode = !isSignUpMode;
+            const nameWrapper = document.getElementById('nameFieldWrapper');
+            const submitBtn = document.getElementById('authSubmitBtn');
+            const toggleText = document.getElementById('authModeToggleText');
+
+            if (isSignUpMode) {
+                nameWrapper.classList.remove('hidden');
+                submitBtn.innerText = "Create Account";
+                toggleText.innerText = "Already have an account? Sign In";
+            } else {
+                nameWrapper.classList.add('hidden');
+                submitBtn.innerText = "Sign In with Email";
+                toggleText.innerText = "Don't have an account? Sign Up";
+            }
+        }
+
+        async function handleEmailAuth(e) {
+            e.preventDefault();
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+            const fullName = document.getElementById('authFullName').value;
+
+            try {
+                if (isSignUpMode) {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    if (fullName) await userCredential.user.updateProfile({ displayName: fullName });
+                    showNotification("Account created successfully!");
+                } else {
+                    await auth.signInWithEmailAndPassword(email, password);
+                    showNotification("Signed in successfully!");
+                }
+            } catch (err) { showNotification(err.message); }
+        }
+
+        function logoutUser() { auth.signOut().then(() => window.location.reload()); }
+
+        function filterTaskCategory(category) {
+            currentTaskCategoryFilter = category;
+            switchTab('active', document.querySelectorAll('.nav-tab-btn')[0]);
+            loadUserTasksFeed();
+        }
+
+        async function loadUserTasksFeed() {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const completedSnapshot = await db.collection('users').doc(user.uid).collection('completed_tasks').get();
+            const completedTaskIds = new Set();
+            completedSnapshot.forEach(doc => completedTaskIds.add(doc.id));
+
+            db.collection('tasks').onSnapshot((snapshot) => {
+                const container = document.getElementById('tasksFeedContainer');
+                if (snapshot.empty) {
+                    container.innerHTML = `<p class="text-xs text-gray-500 text-center py-4">No tasks posted by admin yet.</p>`;
+                    return;
+                }
+                container.innerHTML = '';
+                let visibleCount = 0;
+
+                snapshot.forEach((doc) => {
+                    const task = doc.data();
+                    const taskId = doc.id;
+
+                    if (task.type === 'game') return;
+                    if (completedTaskIds.has(taskId)) return;
+                    if (currentTaskCategoryFilter !== 'all' && task.type !== currentTaskCategoryFilter) return;
+
+                    visibleCount++;
+                    let icon = 'fa-video text-red-400';
+                    if (task.type === 'ptc') icon = 'fa-mouse-pointer text-emerald-400';
+                    if (task.type === 'read') icon = 'fa-book-open text-blue-400';
+                    if (task.type === 'social') icon = 'fab fa-instagram text-pink-400';
+
+                    container.innerHTML += `
+                        <div onclick='openArticleReaderModal(${JSON.stringify({...task, id: taskId}).replace(/'/g, "&#39;")})' class="glow-card p-4 rounded-xl border border-gray-800 hover:border-indigo-500/50 transition cursor-pointer flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-xl bg-gray-900 border border-gray-800 flex items-center justify-center text-base"><i class="fas ${icon}"></i></div>
+                                <div>
+                                    <h4 class="font-bold text-xs text-white">${task.title}</h4>
+                                    <p class="text-[10px] text-gray-400 uppercase mt-0.5">${task.type.toUpperCase()} TASK • ${task.timerSeconds || 15}s Timer</p>
+                                </div>
+                            </div>
+                            <span class="bg-emerald-500/20 text-emerald-400 font-bold text-xs px-3 py-1.5 rounded-lg border border-emerald-500/30">+${task.rewardPoints} Pts</span>
+                        </div>
+                    `;
+                });
+
+                if (visibleCount === 0) {
+                    container.innerHTML = `<p class="text-xs text-gray-500 text-center py-4">You have completed all available tasks for this category!</p>`;
+                }
+            });
+        }
+
+        async function loadGameTasksFeed() {
+            db.collection('tasks').where('type', '==', 'game').onSnapshot((snapshot) => {
+                const container = document.getElementById('gameTasksFeedContainer');
+                if (snapshot.empty) {
+                    container.innerHTML = `<p class="text-xs text-gray-500 text-center py-4">No games posted by admin yet.</p>`;
+                    return;
+                }
+                container.innerHTML = '';
+                snapshot.forEach((doc) => {
+                    const task = doc.data();
+                    container.innerHTML += `
+                        <div onclick='openGamePlayer("${task.title.replace(/'/g, "\\'")}", "${task.mediaUrl}")' class="glow-card p-4 rounded-xl border border-gray-800 hover:border-emerald-500/50 transition cursor-pointer flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-base"><i class="fas fa-gamepad"></i></div>
+                                <div>
+                                    <h4 class="font-bold text-xs text-white">${task.title}</h4>
+                                    <p class="text-[10px] text-emerald-400 font-bold uppercase mt-0.5">🎮 Full-Page Play • 0.6 Pts / sec</p>
+                                </div>
+                            </div>
+                            <button class="glow-button text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow">Play</button>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        function extractYouTubeVideoId(url) {
+            if (!url) return null;
+            if (url.includes('youtu.be/')) return url.split('youtu.be/')[1]?.split('?')[0];
+            if (url.includes('watch?v=')) return url.split('watch?v=')[1]?.split('&')[0];
+            if (url.includes('embed/')) return url.split('embed/')[1]?.split('?')[0];
+            return 'dQw4w9WgXcQ';
+        }
+
+        function openArticleReaderModal(task) {
+            selectedTaskToExecute = task;
+            adSequenceCount = 0;
+            isVideoPlaying = false;
+            taskActiveFlow = true; 
+            
+            if (readerTimerInterval) clearInterval(readerTimerInterval);
+            
+            document.getElementById('readerTaskCategory').innerText = `${task.type.toUpperCase()} TASK`;
+            document.getElementById('readerTaskTitle').innerText = task.title;
+            document.getElementById('multiAdSequenceBox').classList.add('hidden');
+            document.getElementById('articleCompletionBox').classList.add('hidden');
+            document.getElementById('tabVisibilityWarning').classList.add('hidden');
+            
+            const contentFrame = document.getElementById('inSiteContentFrame');
+
+            if (task.type === 'ptc' || task.type === 'social') {
+                let targetUrl = task.mediaUrl || 'https://instagram.com';
+                let isInstagram = targetUrl.includes('instagram.com');
+                contentFrame.innerHTML = `
+                    <div class="flex justify-between items-center bg-gray-900 px-3 py-2 rounded-xl border border-gray-800 text-[11px]">
+                        <span class="text-white font-bold truncate max-w-[200px]"><i class="fab fa-instagram text-pink-400 mr-1"></i> ${isInstagram ? 'Instagram Campaign' : 'Website Link'}</span>
+                        <a href="${targetUrl}" target="_blank" class="text-amber-400 hover:underline text-[10px]">Open App/Tab ↗</a>
+                    </div>
+                    <div class="w-full flex-1 rounded-xl overflow-hidden bg-white relative flex flex-col min-h-[300px]">
+                        <iframe src="${targetUrl}" class="w-full h-full border-0 absolute inset-0" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                    </div>
+                    <p class="text-[10px] text-amber-400 text-center">⚠️ Stay on this screen until your timer finishes!</p>
+                `;
+            } else if (task.type === 'video' || (task.mediaUrl && task.mediaUrl.includes('youtube'))) {
+                const videoId = extractYouTubeVideoId(task.mediaUrl);
+                contentFrame.innerHTML = `
+                    <div class="aspect-video w-full rounded-xl overflow-hidden bg-black shadow-inner relative flex-1">
+                        <div id="youtubePlayerDiv" class="w-full h-full"></div>
+                    </div>
+                    <h4 class="font-bold text-white text-sm mt-2">${task.title}</h4>
+                `;
+                setTimeout(() => initYouTubePlayer(videoId), 300);
+            } else {
+                contentFrame.innerHTML = `
+                    <div class="space-y-3 bg-gray-900 p-4 rounded-xl border border-gray-800 flex-1 overflow-y-auto">
+                        <h2 class="text-sm font-bold text-white">${task.title}</h2>
+                        <p class="text-gray-300 leading-relaxed text-xs">${task.storyContent || "Read through this story to collect points."}</p>
+                    </div>
+                `;
+            }
+
+            document.getElementById('articleReaderModal').classList.remove('hidden');
+            
+            let timerSec = task.timerSeconds || 15;
+            if (task.type !== 'video') isVideoPlaying = true;
+            startSmartTaskTimer(timerSec);
+        }
+
+        async function openGamePlayer(title, mediaUrl) {
+            document.getElementById('gameModalTitle').innerText = title;
+            document.getElementById('gameIframe').src = mediaUrl || 'https://html5games.com';
+            document.getElementById('gameAdOverlay').classList.add('hidden');
+            document.getElementById('gamePlayerModal').classList.remove('hidden');
+
+            if (gameSessionTimer) clearInterval(gameSessionTimer);
+
+            activeGameSession = {
+                startTime: Date.now(),
+                elapsedSeconds: 0,
+                accumulatedSessionPoints: 0,
+                sessionId: 'sess_' + Math.random().toString(36).substring(2, 15),
+                isPausedForAd: false
+            };
+
+            gameSessionTimer = setInterval(() => {
+                if (!isTabActive || activeGameSession.isPausedForAd) return;
+                
+                activeGameSession.elapsedSeconds++;
+                const currentSeconds = activeGameSession.elapsedSeconds;
+                
+                let calculatedPts = (currentSeconds * gameSettings.pointsPerSecond).toFixed(2);
+                document.getElementById('gameTimerDisplay').innerText = `Time: ${currentSeconds}s | +${calculatedPts} pts`;
+
+                if (gameSettings.adsEnabled && currentSeconds > 0 && currentSeconds % gameSettings.adIntervalSeconds === 0) {
+                    activeGameSession.isPausedForAd = true;
+                    document.getElementById('gameAdOverlay').classList.remove('hidden');
+                }
+            }, 1000);
+        }
+
+        async function executeGameAdBreak() {
+            const adWatched = await playAdStrict();
+            if (!adWatched) return;
+
+            document.getElementById('gameAdOverlay').classList.add('hidden');
+            activeGameSession.isPausedForAd = false;
+
+            const user = auth.currentUser;
+            if (user && gameSettings.gameRewardsEnabled) {
+                const adReward = gameSettings.adRewardPoints;
+                const userRef = db.collection('wallets').doc(user.uid);
+                const doc = await userRef.get();
+                let currentPoints = doc.exists ? (doc.data().pointsBalance || 0) : 0;
+                
+                await userRef.set({ pointsBalance: currentPoints + adReward }, { merge: true });
+                await logEarningsTransaction(user.uid, adReward, "Game Ad Reward Completion");
+                showNotification(`🎮 +${adReward} Points added! Game resumed.`);
+            }
+        }
+
+        async function closeGamePlayer() {
+            if (gameSessionTimer) clearInterval(gameSessionTimer);
+            
+            const user = auth.currentUser;
+            if (user && gameSettings.gameRewardsEnabled && activeGameSession.elapsedSeconds > 5) {
+                const validTime = activeGameSession.elapsedSeconds;
+                let rawPoints = validTime * gameSettings.pointsPerSecond;
+                let finalPoints = Math.min(rawPoints, gameSettings.maxGameReward);
+                
+                if (finalPoints >= 0.6) {
+                    const roundedPts = Math.floor(finalPoints);
+                    const userRef = db.collection('wallets').doc(user.uid);
+                    const doc = await userRef.get();
+                    let currentPoints = doc.exists ? (doc.data().pointsBalance || 0) : 0;
+
+                    await userRef.set({ pointsBalance: currentPoints + roundedPts }, { merge: true });
+                    await logEarningsTransaction(user.uid, roundedPts, `Game Session Reward (${validTime}s active play)`);
+                    showNotification(`🎮 Session completed! +${roundedPts} points validated & added.`);
+                }
+            }
+
+            document.getElementById('gameIframe').src = '';
+            document.getElementById('gameAdOverlay').classList.add('hidden');
+            document.getElementById('gamePlayerModal').classList.add('hidden');
+        }
+
+        function initYouTubePlayer(videoId) {
+            if (window.YT && window.YT.Player) {
+                if (ytPlayer && typeof ytPlayer.destroy === 'function') ytPlayer.destroy();
+                ytPlayer = new YT.Player('youtubePlayerDiv', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: videoId,
+                    playerVars: { 'autoplay': 1, 'controls': 1, 'modestbranding': 1 },
+                    events: { 'onStateChange': (e) => { isVideoPlaying = (e.data === YT.PlayerState.PLAYING); } }
+                });
+            } else {
+                setTimeout(() => initYouTubePlayer(videoId), 400);
+            }
+        }
+
+        function startSmartTaskTimer(duration = 15) {
+            taskTimeRemaining = duration;
+            const timerEl = document.getElementById('readerCountdownTimer');
+            if (!timerEl) return;
+            timerEl.innerText = `${taskTimeRemaining}s`;
+
+            if (readerTimerInterval) clearInterval(readerTimerInterval);
+
+            readerTimerInterval = setInterval(() => {
+                if (!taskActiveFlow || !isTabActive) return;
+                if (selectedTaskToExecute.type === 'video' && !isVideoPlaying) return;
+
+                taskTimeRemaining--;
+                timerEl.innerText = `${taskTimeRemaining}s`;
+
+                if (taskTimeRemaining <= 0) {
+                    clearInterval(readerTimerInterval);
+                    timerEl.innerText = "Time Met!";
+                    if (ytPlayer && typeof ytPlayer.stopVideo === 'function') ytPlayer.stopVideo();
+                    
+                    document.getElementById('multiAdSequenceBox').classList.remove('hidden');
+                    adSequenceCount = 1;
+                    document.getElementById('adStepIndicator').innerText = adSequenceCount;
+                    document.getElementById('adSequenceStatusText').innerText = "Watch ad 1 of 3 to proceed toward your reward claim.";
+                    document.getElementById('multiAdBtn').innerHTML = `<i class="fas fa-ad mr-1"></i> Watch Ad 1 of 3`;
+                }
+            }, 1000);
+        }
+
+        async function handleNextMultiAd() {
+            const adWatched = await playAdStrict();
+            if (!adWatched) return;
+
+            adSequenceCount++;
+            if (adSequenceCount <= 3) {
+                document.getElementById('adStepIndicator').innerText = adSequenceCount;
+                document.getElementById('multiAdBtn').innerHTML = `<i class="fas fa-ad mr-1"></i> Watch Ad ${adSequenceCount} of 3`;
+                showNotification(`Ad ${adSequenceCount - 1} verified!`);
+            } else {
+                document.getElementById('multiAdSequenceBox').classList.add('hidden');
+                document.getElementById('articleCompletionBox').classList.remove('hidden');
+                showNotification("All ad sequences verified successfully!");
+            }
+        }
+
+        function closeArticleReader() {
+            taskActiveFlow = false;
+            if (readerTimerInterval) clearInterval(readerTimerInterval);
+            if (ytPlayer && typeof ytPlayer.stopVideo === 'function') ytPlayer.stopVideo();
+            document.getElementById('articleReaderModal').classList.add('hidden');
+        }
+
+        async function claimTaskReward() {
+            const user = auth.currentUser;
+            if (!user || !selectedTaskToExecute) return;
+
+            const userRef = db.collection('wallets').doc(user.uid);
+            const doc = await userRef.get();
+            let currentPoints = doc.exists ? (doc.data().pointsBalance || 0) : 0;
+            const earnedPoints = selectedTaskToExecute.rewardPoints || 10;
+            const taskTitle = selectedTaskToExecute.title || "Task Reward";
+
+            await userRef.set({ pointsBalance: currentPoints + earnedPoints }, { merge: true });
+            await logEarningsTransaction(user.uid, earnedPoints, `Completed Task: ${taskTitle}`);
+
+            if (selectedTaskToExecute.id) {
+                await db.collection('users').doc(user.uid).collection('completed_tasks').doc(selectedTaskToExecute.id).set({
+                    completedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+
+            closeArticleReader();
+            showNotification(`Success! Earned +${earnedPoints} points!`);
+            loadUserTasksFeed();
+        }
+
+        async function getTodaySpinCount(userId) {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const doc = await db.collection('users').doc(userId).collection('spin_tracker').doc(todayStr).get();
+            return doc.exists ? (doc.data().count || 0) : 0;
+        }
+
+        async function incrementSpinCount(userId) {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const spinDocRef = db.collection('users').doc(userId).collection('spin_tracker').doc(todayStr);
+            const doc = await spinDocRef.get();
+            const current = doc.exists ? (doc.data().count || 0) : 0;
+            await spinDocRef.set({ count: current + 1 }, { merge: true });
+        }
+
+        async function updateSpinCountUI() {
+            const user = auth.currentUser;
+            if (!user) return;
+            const count = await getTodaySpinCount(user.uid);
+            const display = document.getElementById('spinCountDisplay');
+            if(display) display.innerText = count;
+        }
+
+        async function openSpinWheel() {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const spinsToday = await getTodaySpinCount(user.uid);
+            if (spinsToday >= 20) {
+                showNotification("⚠️ Daily limit reached! 20 spins max per day.");
+                return;
+            }
+            
+            const adWatched = await playAdStrict();
+            if (!adWatched) return;
+
+            await incrementSpinCount(user.uid);
+            await updateSpinCountUI();
+
+            db.collection('wallets').doc(user.uid).get().then(async doc => {
+                let points = doc.exists ? (doc.data().pointsBalance || 0) + 50 : 50;
+                db.collection('wallets').doc(user.uid).set({ pointsBalance: points }, { merge: true });
+                await logEarningsTransaction(user.uid, 50, "Lucky Spin Wheel Bonus");
+                showNotification("🎉 Congratulations! You won 50 bonus points!");
+            });
+        }
+
+        function openWithdrawModal() { document.getElementById('withdrawModal').classList.remove('hidden'); }
+        function closeWithdrawModal() { document.getElementById('withdrawModal').classList.add('hidden'); }
+        function selectWithdrawTier(usd, points) {
+            chosenWithdrawUSD = usd;
+            chosenWithdrawPoints = points;
+            document.getElementById('selectedTierDisplay').value = `$${usd} Tier (${points.toLocaleString()} Points Required)`;
+        }
+
+        function updateWithdrawFields() {
+            const method = document.getElementById('withdrawMethod').value;
+            const label1 = document.getElementById('gatewayLabel1');
+            if (method === 'crypto') label1.innerText = "USDT Wallet Address (BEP20 / TRC20)";
+            else if (method === 'bank') label1.innerText = "Bank Name & Account Number";
+            else if (method === 'airtime') label1.innerText = "Mobile Network & Number";
+        }
+
+        async function submitWithdrawal(e) {
+            e.preventDefault();
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const userRef = db.collection('wallets').doc(user.uid);
+            const doc = await userRef.get();
+            const currentPoints = doc.exists ? (doc.data().pointsBalance || 0) : 0;
+
+            if (currentPoints < chosenWithdrawPoints) {
+                showNotification(`Insufficient points! You need at least ${chosenWithdrawPoints.toLocaleString()} points.`);
+                return;
+            }
+
+            await userRef.set({ pointsBalance: currentPoints - chosenWithdrawPoints }, { merge: true });
+            await logEarningsTransaction(user.uid, -chosenWithdrawPoints, `Withdrawal Request ($${chosenWithdrawUSD})`);
+
+            await db.collection('withdrawals').add({
+                userId: user.uid,
+                userEmail: user.email,
+                method: document.getElementById('withdrawMethod').value,
+                amountUSD: chosenWithdrawUSD,
+                amountPoints: chosenWithdrawPoints,
+                detail1: document.getElementById('withdrawField1').value,
+                detail2: document.getElementById('withdrawField2').value,
+                status: 'pending',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            closeWithdrawModal();
+            showNotification(`Payout request for $${chosenWithdrawUSD} submitted!`);
+        }
+
+        function copyReferralLink() {
+            const copyText = document.getElementById("referralLinkInput");
+            copyText.select();
+            document.execCommand("copy");
+            showNotification("Referral link copied!");
+        }
+    </script>
+</body>
+</html>
