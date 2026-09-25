@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Earnbeta - Telegram Mini App</title>
-    <meta name="monetag" content="a3872af5ca36bd6981685105df841ed8">
+    <title>Earnbeta - Cross-Browser & Telegram Mini App</title>
+    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -18,7 +18,7 @@
     <!-- YouTube IFrame API -->
     <script src="https://www.youtube.com/iframe_api"></script>
 
-    <!-- Monetag SDK -->
+    <!-- Monetag SDK (Telegram + Browser Fallback compatible) -->
     <script src='//libtl.com/sdk.js' data-zone='11870767' data-sdk='show_11870767'></script>
 
     <style>
@@ -220,7 +220,7 @@
         <!-- TAB 3: WATCH & EARN -->
         <div id="tab-watch-earn" class="tab-content space-y-4">
             <h2 class="text-base font-bold text-white"><i class="fas fa-tv text-amber-400 mr-2"></i> Watch & Earn Ads</h2>
-            <p class="text-xs text-gray-300">Watch rewarded ads to earn points instantly. Fully separate from the game ad system.</p>
+            <p class="text-xs text-gray-300">Watch rewarded ads to earn points instantly across Chrome, Opera, and other browsers.</p>
             
             <div class="glow-card p-5 rounded-2xl border border-amber-500/30 space-y-4 shadow-xl">
                 <div class="flex justify-between items-center border-b border-gray-800 pb-3">
@@ -266,7 +266,7 @@
             
             <div class="glow-card p-4 rounded-2xl border border-gray-800 space-y-3">
                 <h3 class="font-bold text-xs text-amber-400 uppercase">Invite & Earn Points</h3>
-                <p class="text-xs text-gray-300">Invite friends using your Telegram Mini App referral link to accumulate points toward your cashout goals!</p>
+                <p class="text-xs text-gray-300">Invite friends using your referral link to accumulate points toward your cashout goals!</p>
                 <div class="flex items-center space-x-2">
                     <input type="text" id="referralLinkInput" readonly class="w-full bg-gray-900 border border-gray-800 rounded-xl p-2.5 text-xs text-gray-300">
                     <button onclick="copyReferralLink()" class="glow-button text-white px-4 py-2.5 rounded-xl text-xs font-bold shrink-0 cursor-pointer">Copy</button>
@@ -534,7 +534,7 @@
             rewardPerAd: 1,
             cooldownSeconds: 120,
             dailyLimit: 30,
-            adProvider: "Monetag / Custom",
+            adProvider: "Cross-Browser Custom Ad",
             adScript: "",
             status: "active"
         };
@@ -555,8 +555,8 @@
 
         let currentWelcomeStep = 0;
         const welcomeSteps = [
-            { title: "Welcome to Earnbeta", desc: "Watch videos, click PTC ads, spin the wheel, and cash out!" },
-            { title: "Games & Watch & Earn", desc: "Play full-screen games with 90s ad breaks or use dedicated Watch & Earn ads." },
+            { title: "Welcome to Earnbeta", desc: "Watch videos, click PTC ads, spin the wheel, and cash out across all browsers!" },
+            { title: "Games & Watch & Earn", desc: "Play full-screen games with ad breaks or use dedicated cross-browser Watch & Earn ads." },
             { title: "Withdraw $5 - $100 Tiers", desc: "Accumulate at least 100,000 points to unlock direct crypto or fiat withdrawals!" }
         ];
 
@@ -597,7 +597,7 @@
                         rewardPerAd: data.rewardPerAd ?? 1,
                         cooldownSeconds: data.cooldownSeconds ?? 120,
                         dailyLimit: data.dailyLimit ?? 30,
-                        adProvider: data.adProvider || "Default",
+                        adProvider: data.adProvider || "Cross-Browser",
                         adScript: data.adScript || "",
                         status: data.status || "active"
                     };
@@ -715,14 +715,47 @@
             setTimeout(() => { toast.style.opacity = '0'; }, 3000);
         }
 
+        /**
+         * Cross-browser compatible ad runner.
+         * Executes admin-configured ad scripts or SDK functions across Chrome, Opera, Safari, etc.
+         */
         async function playAdStrict() {
             return new Promise((resolve) => {
                 let adResolved = false;
                 const safetyTimer = setTimeout(() => {
-                    if (!adResolved) { adResolved = true; resolve(true); }
-                }, 1500);
+                    if (!adResolved) { 
+                        adResolved = true; 
+                        resolve(true); // Fallback gracefully if ad frame is blocked by browser extensions or unsupported environment
+                    }
+                }, 2000);
 
                 try {
+                    // Check for admin custom ad script execution first
+                    let dynamicScriptToRun = watchEarnConfig.adScript || gameSettings.adScript;
+                    if (dynamicScriptToRun && dynamicScriptToRun.trim() !== "") {
+                        try {
+                            const dynamicContainer = document.createElement('div');
+                            dynamicContainer.innerHTML = dynamicScriptToRun;
+                            document.body.appendChild(dynamicContainer);
+                            
+                            const scripts = dynamicContainer.querySelectorAll('script');
+                            scripts.forEach(oldScript => {
+                                const newScript = document.createElement('script');
+                                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                                newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                                oldScript.parentNode.replaceChild(newScript, oldScript);
+                            });
+                            
+                            setTimeout(() => {
+                                if (!adResolved) { adResolved = true; clearTimeout(safetyTimer); resolve(true); }
+                            }, 1200);
+                            return;
+                        } catch (scriptErr) {
+                            console.warn("Custom ad script execution error:", scriptErr);
+                        }
+                    }
+
+                    // Standard Monetag SDK integration function check
                     if (typeof window.show_11870767 === 'function') {
                         window.show_11870767().then(() => {
                             if (!adResolved) { adResolved = true; clearTimeout(safetyTimer); resolve(true); }
@@ -730,7 +763,10 @@
                             if (!adResolved) { adResolved = true; clearTimeout(safetyTimer); resolve(true); }
                         });
                     } else {
-                        if (!adResolved) { adResolved = true; clearTimeout(safetyTimer); resolve(true); }
+                        // Standard browser fallback simulation / completion pass
+                        setTimeout(() => {
+                            if (!adResolved) { adResolved = true; clearTimeout(safetyTimer); resolve(true); }
+                        }, 1000);
                     }
                 } catch (err) {
                     if (!adResolved) { adResolved = true; clearTimeout(safetyTimer); resolve(true); }
@@ -804,7 +840,7 @@
                 document.getElementById('profileAvatarBig').innerText = name.charAt(0).toUpperCase();
                 document.getElementById('profileUserId').innerText = user.uid.substring(0, 12) + "...";
                 
-                document.getElementById('referralLinkInput').value = `https://t.me/Earnbeta_bot/app?startapp=ref_${user.uid}`;
+                document.getElementById('referralLinkInput').value = `${window.location.origin}${window.location.pathname}?ref=${user.uid}`;
 
                 db.collection('wallets').doc(user.uid).onSnapshot((doc) => {
                     if (doc.exists) {
